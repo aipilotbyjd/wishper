@@ -2,24 +2,29 @@ import { useState } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 
 export const ApiKeyInput = () => {
-  const { apiKey, setApiKey } = useSettingsStore();
+  const { getCurrentApiKey, setGroqApiKey, setOpenaiApiKey, apiProvider } = useSettingsStore();
+  const currentKey = getCurrentApiKey();
   const [showKey, setShowKey] = useState(false);
-  const [tempKey, setTempKey] = useState(apiKey);
+  const [tempKey, setTempKey] = useState(currentKey);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    setApiKey(tempKey);
+    if (apiProvider === 'groq') {
+      setGroqApiKey(tempKey);
+    } else {
+      setOpenaiApiKey(tempKey);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const hasKey = apiKey.length > 0;
-  const hasChanges = tempKey !== apiKey;
+  const hasKey = currentKey.length > 0;
+  const hasChanges = tempKey !== currentKey;
 
   return (
     <div className="space-y-3">
       <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
-        OpenAI API Key
+        {apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API Key
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">

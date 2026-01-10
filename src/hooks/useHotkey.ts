@@ -13,7 +13,7 @@ import { perfMonitor } from '../lib/performance';
 
 export function useHotkey() {
   const { state, setState, setTranscript, setError, reset } = useRecordingStore();
-  const { apiKey, language, shouldPolish, hotkey, autoPaste, apiProvider } = useSettingsStore();
+  const { getCurrentApiKey, language, shouldPolish, hotkey, autoPaste, apiProvider } = useSettingsStore();
   const { addError } = useErrorStore();
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export function useHotkey() {
     if (state === 'processing') return;
 
     if (state === 'idle') {
+      const apiKey = getCurrentApiKey();
       if (!apiKey) {
         addError({ 
           message: `Please configure your ${apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API key`, 
@@ -75,6 +76,7 @@ export function useHotkey() {
         // Get dictionary prompt for better recognition
         await dbGetDictionaryPrompt(); // TODO: Pass to transcribe API when prompt parameter is added
         
+        const apiKey = getCurrentApiKey();
         const result = await transcribeAndPolish(
           audioData,
           apiKey,
@@ -136,7 +138,7 @@ export function useHotkey() {
     } else if (state === 'done') {
       reset();
     }
-  }, [state, apiKey, language, shouldPolish, autoPaste, setState, setTranscript, setError, reset, addError]);
+  }, [state, getCurrentApiKey, language, shouldPolish, autoPaste, apiProvider, setState, setTranscript, setError, reset, addError]);
 
   useTauriEvent('hotkey_pressed', handleHotkeyPress);
   useTauriEvent('toggle_recording', handleHotkeyPress);

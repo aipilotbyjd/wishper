@@ -21,7 +21,8 @@ const LANGUAGES = [
 
 export const GeneralSettings = () => {
   const {
-    apiKey, setApiKey,
+    openaiApiKey, setOpenaiApiKey,
+    groqApiKey, setGroqApiKey,
     language, setLanguage,
     shouldPolish, setShouldPolish,
     autoPaste, setAutoPaste,
@@ -30,10 +31,21 @@ export const GeneralSettings = () => {
   } = useSettingsStore();
 
   const [showKey, setShowKey] = useState(false);
-  const [tempKey, setTempKey] = useState(apiKey);
+  const currentKey = apiProvider === 'groq' ? groqApiKey : openaiApiKey;
+  const [tempKey, setTempKey] = useState(currentKey);
+
+  // Update tempKey when provider changes
+  const handleProviderChange = (provider: ApiProvider) => {
+    setApiProvider(provider);
+    setTempKey(provider === 'groq' ? groqApiKey : openaiApiKey);
+  };
 
   const handleSaveKey = () => {
-    setApiKey(tempKey);
+    if (apiProvider === 'groq') {
+      setGroqApiKey(tempKey);
+    } else {
+      setOpenaiApiKey(tempKey);
+    }
   };
 
   return (
@@ -44,7 +56,7 @@ export const GeneralSettings = () => {
           {PROVIDERS.map((provider) => (
             <button
               key={provider.value}
-              onClick={() => setApiProvider(provider.value)}
+              onClick={() => handleProviderChange(provider.value)}
               className={`px-4 py-3 rounded-xl border text-left transition-all ${
                 apiProvider === provider.value
                   ? 'bg-purple-500/20 border-purple-500 text-white'
@@ -83,7 +95,7 @@ export const GeneralSettings = () => {
           </div>
           <button
             onClick={handleSaveKey}
-            disabled={tempKey === apiKey}
+            disabled={tempKey === currentKey}
             className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-white/10 disabled:text-white/30 text-white text-sm font-medium rounded-xl transition-colors"
           >
             Save
