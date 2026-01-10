@@ -1,24 +1,31 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "wishper",
-  "version": "0.1.0",
-  "identifier": "com.jaydeep.wishper",
+  "productName": "Wishper",
+  "version": "1.0.0",
+  "identifier": "com.wishper.app",
   "build": {
-    "beforeDevCommand": "yarn dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "yarn build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "wishper",
-        "width": 800,
-        "height": 600
+        "title": "Wishper",
+        "width": 400,
+        "height": 550,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "visible": true,
+        "decorations": true,
+        "transparent": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' https://api.openai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
@@ -30,6 +37,21 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": [],
+    "copyright": "Copyright © 2024 Wishper",
+    "category": "Productivity",
+    "shortDescription": "Voice-to-text dictation with AI polishing",
+    "longDescription": "Wishper is a powerful voice-to-text dictation app that uses OpenAI's Whisper for transcription and GPT for intelligent text polishing. Simply press a hotkey to start recording, speak naturally, and watch as your words are transcribed and automatically refined.",
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "-"
+    }
+  },
+  "plugins": {
+    "global-shortcut": {
+      "all": true
+    }
   }
 }
