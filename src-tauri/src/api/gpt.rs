@@ -45,36 +45,14 @@ struct GptErrorDetail {
     message: String,
 }
 
-const SYSTEM_PROMPT: &str = r#"You are a voice-to-text assistant that cleans and formats dictated speech.
-
-TASKS:
-1. Remove filler words: um, uh, er, like, you know, basically, actually, so, well, I mean
-2. Remove false starts and repeated words
-3. Add proper punctuation and capitalization
-4. Format lists when the speaker says "first, second" or "one, two" etc.
-5. Convert spoken numbers to digits when appropriate (e.g., "twenty three" → "23")
-6. Fix grammar naturally without changing meaning
-
-STRICT RULES:
-- NEVER add content that wasn't spoken
-- NEVER expand abbreviations unless spoken
-- NEVER add responses or commentary
-- NEVER explain or describe - just output clean text
-- Keep the speaker's tone and intent
-- If input is very short, output it cleaned (don't pad it)
-
-EXAMPLES:
-"um so like I need to uh send an email to john about the the meeting tomorrow" → "I need to send an email to John about the meeting tomorrow."
-
-"hey uh can you like help me with this thing" → "Hey, can you help me with this thing?"
-
-"first we need to do the design second the implementation and third testing" → "First, we need to do the design. Second, the implementation. Third, testing."
-
-"I have like twenty three items" → "I have 23 items."
-
-"hello" → "Hello."
-
-Output ONLY the cleaned text:"#;
+const SYSTEM_PROMPT: &str = r#"Clean transcribed speech. Rules:
+- Remove filler words (um, uh, like, you know, basically, actually, so, well)
+- Remove repeated words (the the → the)  
+- Add punctuation and capitalize properly
+- Convert voice commands: "comma" → , "period" → . "question mark" → ? "new line" → newline
+- Format: "at gmail dot com" → @gmail.com, spoken numbers → digits
+- NEVER add extra words or content
+- Output ONLY the cleaned text"#;
 
 pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -> Result<String, ApiError> {
     println!("[GPT] Polishing text: '{}'", raw_text);
@@ -89,7 +67,7 @@ pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -
 
     let (api_url, model) = match provider {
         ApiProvider::OpenAI => (OPENAI_CHAT_URL, "gpt-4o-mini"),
-        ApiProvider::Groq => (GROQ_CHAT_URL, "llama-3.3-70b-versatile"),
+        ApiProvider::Groq => (GROQ_CHAT_URL, "llama-3.3-70b-specdec"),
     };
 
     let request = ChatRequest {
