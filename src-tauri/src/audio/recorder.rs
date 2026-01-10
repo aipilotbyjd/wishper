@@ -98,6 +98,10 @@ impl AudioRecorder {
         // Give thread time to stop
         thread::sleep(std::time::Duration::from_millis(100));
         let samples = self.audio_buffer.lock().unwrap().clone();
+        let sample_rate = *self.sample_rate.lock().unwrap();
+        let duration_secs = samples.len() as f32 / sample_rate as f32;
+        println!("[Recorder] Stopped. Samples: {}, Rate: {} Hz, Duration: {:.2}s", 
+            samples.len(), sample_rate, duration_secs);
         self.audio_buffer.lock().unwrap().clear();
         samples
     }

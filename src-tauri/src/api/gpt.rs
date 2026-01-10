@@ -45,20 +45,11 @@ struct GptErrorDetail {
     message: String,
 }
 
-const SYSTEM_PROMPT: &str = r#"You are a text polishing assistant. Your job is to clean up voice-transcribed text.
-
-Rules:
-1. Remove filler words: um, uh, like, you know, basically, actually, literally, so, well
-2. Remove false starts and repetitions
-3. Add proper punctuation (periods, commas, question marks)
-4. Fix obvious grammar mistakes
-5. Maintain the original meaning and tone
-6. Keep the text natural, don't make it overly formal
-7. Preserve technical terms, names, and specific vocabulary
-8. Format lists if the speaker clearly intends a list
-9. Return ONLY the polished text, no explanations or quotes around it"#;
+const SYSTEM_PROMPT: &str = r#"Polish the following transcribed text. Remove filler words (um, uh, like), fix grammar, add punctuation. Return ONLY the polished text with no explanation."#;
 
 pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -> Result<String, ApiError> {
+    println!("[GPT] Polishing text: '{}'", raw_text);
+    
     if api_key.is_empty() {
         return Err(ApiError::NoApiKey);
     }
@@ -69,7 +60,7 @@ pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -
 
     let (api_url, model) = match provider {
         ApiProvider::OpenAI => (OPENAI_CHAT_URL, "gpt-4o-mini"),
-        ApiProvider::Groq => (GROQ_CHAT_URL, "llama-3.1-8b-instant"),
+        ApiProvider::Groq => (GROQ_CHAT_URL, "llama-3.3-70b-versatile"),
     };
 
     let request = ChatRequest {
@@ -84,7 +75,7 @@ pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -
                 content: raw_text.to_string(),
             },
         ],
-        temperature: 0.3,
+        temperature: 0.0,
         max_tokens: 2048,
     };
 
