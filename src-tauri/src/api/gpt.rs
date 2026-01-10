@@ -2,7 +2,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use super::errors::ApiError;
 
-const GPT_API_URL: &str = "https://api.openai.com/v1/chat/completions";
+// Use Groq API (free tier) instead of OpenAI
+const GPT_API_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
 
 #[derive(Serialize)]
 struct ChatMessage {
