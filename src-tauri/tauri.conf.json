@@ -49,9 +49,5 @@
       "signingIdentity": "-"
     }
   },
-  "plugins": {
-    "global-shortcut": {
-      "all": true
-    }
-  }
+  "plugins": {}
 }
