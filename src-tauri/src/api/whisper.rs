@@ -10,6 +10,7 @@ const MAX_AUDIO_SIZE: usize = 25 * 1024 * 1024;
 pub enum ApiProvider {
     OpenAI,
     Groq,
+    Gemini,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +58,7 @@ pub async fn transcribe_audio(
     let (api_url, model) = match provider {
         ApiProvider::OpenAI => (OPENAI_WHISPER_URL, "whisper-1"),
         ApiProvider::Groq => (GROQ_WHISPER_URL, "whisper-large-v3"),
+        ApiProvider::Gemini => (GROQ_WHISPER_URL, "whisper-large-v3"), // Gemini uses Groq for transcription
     };
 
     let form = multipart::Form::new()

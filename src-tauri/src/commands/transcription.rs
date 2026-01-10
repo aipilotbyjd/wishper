@@ -3,6 +3,7 @@ use crate::api::{transcribe_audio, polish_text, ApiProvider};
 fn parse_provider(provider: &str) -> ApiProvider {
     match provider.to_lowercase().as_str() {
         "groq" => ApiProvider::Groq,
+        "gemini" => ApiProvider::Gemini,
         _ => ApiProvider::OpenAI,
     }
 }
@@ -29,20 +30,23 @@ pub async fn polish(raw_text: String, api_key: String, provider: String) -> Resu
 #[tauri::command]
 pub async fn transcribe_and_polish(
     audio_data: Vec<u8>,
-    api_key: String,
+    transcription_api_key: String,
+    polishing_api_key: String,
     language: String,
     should_polish: bool,
-    provider: String,
+    transcription_provider: String,
+    polishing_provider: String,
 ) -> Result<TranscriptionResult, String> {
-    let api_provider = parse_provider(&provider);
+    let trans_provider = parse_provider(&transcription_provider);
+    let polish_provider = parse_provider(&polishing_provider);
     
-    let raw_text = transcribe_audio(audio_data, &api_key, &language, api_provider)
+    let raw_text = transcribe_audio(audio_data, &transcription_api_key, &language, trans_provider)
         .await
         .map_err(|e| e.to_string())?;
 
     let polished_text = if should_polish && !raw_text.is_empty() {
         Some(
-            polish_text(&raw_text, &api_key, api_provider)
+            polish_text(&raw_text, &polishing_api_key, polish_provider)
                 .await
                 .map_err(|e| e.to_string())?,
         )

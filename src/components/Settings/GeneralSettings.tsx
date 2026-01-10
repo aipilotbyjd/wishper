@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { ApiProvider } from '../../lib/tauri';
 
-const PROVIDERS: { value: ApiProvider; name: string; description: string }[] = [
-  { value: 'groq', name: 'Groq (Free)', description: 'Fast & free tier available' },
-  { value: 'openai', name: 'OpenAI', description: 'GPT-4o + Whisper' },
+const TRANSCRIPTION_PROVIDERS: { value: ApiProvider; name: string }[] = [
+  { value: 'groq', name: 'Groq (Free)' },
+  { value: 'openai', name: 'OpenAI (Paid)' },
+];
+
+const POLISHING_PROVIDERS: { value: ApiProvider; name: string }[] = [
+  { value: 'groq', name: 'Groq - Llama 3.3 (Free)' },
+  { value: 'gemini', name: 'Gemini 1.5 Flash (Free)' },
+  { value: 'openai', name: 'GPT-4o-mini (Paid)' },
 ];
 
 const LANGUAGES = [
@@ -23,83 +29,132 @@ export const GeneralSettings = () => {
   const {
     openaiApiKey, setOpenaiApiKey,
     groqApiKey, setGroqApiKey,
+    geminiApiKey, setGeminiApiKey,
     language, setLanguage,
     shouldPolish, setShouldPolish,
     autoPaste, setAutoPaste,
     hotkey, setHotkey,
-    apiProvider, setApiProvider,
+    transcriptionProvider, setTranscriptionProvider,
+    polishingProvider, setPolishingProvider,
   } = useSettingsStore();
 
-  const [showKey, setShowKey] = useState(false);
-  const currentKey = apiProvider === 'groq' ? groqApiKey : openaiApiKey;
-  const [tempKey, setTempKey] = useState(currentKey);
-
-  // Update tempKey when provider changes
-  const handleProviderChange = (provider: ApiProvider) => {
-    setApiProvider(provider);
-    setTempKey(provider === 'groq' ? groqApiKey : openaiApiKey);
-  };
-
-  const handleSaveKey = () => {
-    if (apiProvider === 'groq') {
-      setGroqApiKey(tempKey);
-    } else {
-      setOpenaiApiKey(tempKey);
-    }
-  };
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [tempGroqKey, setTempGroqKey] = useState(groqApiKey);
+  const [tempGeminiKey, setTempGeminiKey] = useState(geminiApiKey);
+  const [tempOpenAIKey, setTempOpenAIKey] = useState(openaiApiKey);
 
   return (
     <div className="space-y-6">
+      {/* Transcription Provider */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">API Provider</label>
-        <div className="grid grid-cols-2 gap-2">
-          {PROVIDERS.map((provider) => (
-            <button
-              key={provider.value}
-              onClick={() => handleProviderChange(provider.value)}
-              className={`px-4 py-3 rounded-xl border text-left transition-all ${
-                apiProvider === provider.value
-                  ? 'bg-purple-500/20 border-purple-500 text-white'
-                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              <div className="text-sm font-medium">{provider.name}</div>
-              <div className="text-xs text-white/50">{provider.description}</div>
-            </button>
+        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">Transcription (Speech-to-Text)</label>
+        <select
+          value={transcriptionProvider}
+          onChange={(e) => setTranscriptionProvider(e.target.value as ApiProvider)}
+          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none"
+        >
+          {TRANSCRIPTION_PROVIDERS.map((p) => (
+            <option key={p.value} value={p.value} className="bg-slate-800">{p.name}</option>
           ))}
-        </div>
+        </select>
       </div>
 
+      {/* Polishing Provider */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
-          {apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API Key
-        </label>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">Polishing (Text Cleanup)</label>
+        <select
+          value={polishingProvider}
+          onChange={(e) => setPolishingProvider(e.target.value as ApiProvider)}
+          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none"
+        >
+          {POLISHING_PROVIDERS.map((p) => (
+            <option key={p.value} value={p.value} className="bg-slate-800">{p.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* API Keys Section */}
+      <div className="space-y-4 pt-4 border-t border-white/10">
+        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">API Keys</label>
+        
+        {/* Groq Key */}
+        <div className="space-y-1">
+          <label className="text-xs text-white/50">
+            Groq API Key {transcriptionProvider === 'groq' && '(for transcription)'} {polishingProvider === 'groq' && '(for polishing)'}
+          </label>
+          <div className="flex gap-2">
             <input
-              type={showKey ? 'text' : 'password'}
-              value={tempKey}
-              onChange={(e) => setTempKey(e.target.value)}
-              placeholder={apiProvider === 'groq' ? 'gsk_...' : 'sk-...'}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              type={showGroqKey ? 'text' : 'password'}
+              value={tempGroqKey}
+              onChange={(e) => setTempGroqKey(e.target.value)}
+              placeholder="gsk_..."
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
             />
+            <button onClick={() => setShowGroqKey(!showGroqKey)} className="px-3 text-white/40 hover:text-white/70 text-sm">
+              {showGroqKey ? 'Hide' : 'Show'}
+            </button>
             <button
-              type="button"
-              onClick={() => setShowKey(!showKey)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+              onClick={() => setGroqApiKey(tempGroqKey)}
+              disabled={tempGroqKey === groqApiKey}
+              className="px-3 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-white/10 disabled:text-white/30 text-white text-xs rounded-lg"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showKey ? "M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" : "M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"} />
-              </svg>
+              Save
             </button>
           </div>
-          <button
-            onClick={handleSaveKey}
-            disabled={tempKey === currentKey}
-            className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-white/10 disabled:text-white/30 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            Save
-          </button>
+        </div>
+
+        {/* Gemini Key */}
+        <div className="space-y-1">
+          <label className="text-xs text-white/50">
+            Gemini API Key {polishingProvider === 'gemini' && '(for polishing)'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              type={showGeminiKey ? 'text' : 'password'}
+              value={tempGeminiKey}
+              onChange={(e) => setTempGeminiKey(e.target.value)}
+              placeholder="AIza..."
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+            />
+            <button onClick={() => setShowGeminiKey(!showGeminiKey)} className="px-3 text-white/40 hover:text-white/70 text-sm">
+              {showGeminiKey ? 'Hide' : 'Show'}
+            </button>
+            <button
+              onClick={() => setGeminiApiKey(tempGeminiKey)}
+              disabled={tempGeminiKey === geminiApiKey}
+              className="px-3 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-white/10 disabled:text-white/30 text-white text-xs rounded-lg"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+
+        {/* OpenAI Key */}
+        <div className="space-y-1">
+          <label className="text-xs text-white/50">
+            OpenAI API Key {transcriptionProvider === 'openai' && '(for transcription)'} {polishingProvider === 'openai' && '(for polishing)'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              type={showOpenAIKey ? 'text' : 'password'}
+              value={tempOpenAIKey}
+              onChange={(e) => setTempOpenAIKey(e.target.value)}
+              placeholder="sk-..."
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+            />
+            <button onClick={() => setShowOpenAIKey(!showOpenAIKey)} className="px-3 text-white/40 hover:text-white/70 text-sm">
+              {showOpenAIKey ? 'Hide' : 'Show'}
+            </button>
+            <button
+              onClick={() => setOpenaiApiKey(tempOpenAIKey)}
+              disabled={tempOpenAIKey === openaiApiKey}
+              className="px-3 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-white/10 disabled:text-white/30 text-white text-xs rounded-lg"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
 

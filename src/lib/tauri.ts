@@ -22,7 +22,7 @@ export async function isRecording(): Promise<boolean> {
 }
 
 // API functions
-export type ApiProvider = 'openai' | 'groq';
+export type ApiProvider = 'openai' | 'groq' | 'gemini';
 
 export async function transcribe(
   audioData: number[],
@@ -44,12 +44,22 @@ export interface TranscriptionResult {
 
 export async function transcribeAndPolish(
   audioData: number[],
-  apiKey: string,
+  transcriptionApiKey: string,
+  polishingApiKey: string,
   language: string,
   shouldPolish: boolean,
-  provider: ApiProvider = 'groq'
+  transcriptionProvider: ApiProvider = 'groq',
+  polishingProvider: ApiProvider = 'groq'
 ): Promise<TranscriptionResult> {
-  return invoke('transcribe_and_polish', { audioData, apiKey, language, shouldPolish, provider });
+  return invoke('transcribe_and_polish', { 
+    audioData, 
+    transcriptionApiKey, 
+    polishingApiKey,
+    language, 
+    shouldPolish, 
+    transcriptionProvider,
+    polishingProvider
+  });
 }
 
 // Hotkey functions

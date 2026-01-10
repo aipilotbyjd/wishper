@@ -4,14 +4,14 @@ import { startRecording, stopRecording, transcribeAndPolish } from '../lib/tauri
 
 export const RecordButton = () => {
   const { state, setState, setTranscript, setError } = useRecordingStore();
-  const { getCurrentApiKey, language, shouldPolish, apiProvider } = useSettingsStore();
+  const { getTranscriptionApiKey, getPolishingApiKey, language, shouldPolish, transcriptionProvider, polishingProvider } = useSettingsStore();
 
   const handleToggleRecording = async () => {
     try {
       if (state === 'idle') {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey) {
-          setError(`Please enter your ${apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API key first`);
+        const transcriptionKey = getTranscriptionApiKey();
+        if (!transcriptionKey) {
+          setError(`Please enter your ${transcriptionProvider === 'groq' ? 'Groq' : 'OpenAI'} API key first`);
           return;
         }
         setTranscript(null);
@@ -23,13 +23,16 @@ export const RecordButton = () => {
         
         const audioData = await stopRecording();
         
-        const apiKey = getCurrentApiKey();
+        const transcriptionKey = getTranscriptionApiKey();
+        const polishingKey = getPolishingApiKey();
         const result = await transcribeAndPolish(
           audioData,
-          apiKey,
+          transcriptionKey,
+          polishingKey,
           language,
           shouldPolish,
-          apiProvider
+          transcriptionProvider,
+          polishingProvider
         );
         
         const finalText = result.polished_text || result.raw_text;
