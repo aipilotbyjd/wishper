@@ -8,6 +8,10 @@ pub struct AudioRecorder {
     sample_rate: Arc<Mutex<u32>>,
 }
 
+// Make AudioRecorder Send + Sync safe
+unsafe impl Send for AudioRecorder {}
+unsafe impl Sync for AudioRecorder {}
+
 impl AudioRecorder {
     pub fn new() -> Self {
         Self {
@@ -54,9 +58,11 @@ impl AudioRecorder {
 
         let buffer = self.audio_buffer.clone();
         let is_recording = self.is_recording.clone();
+        let is_recording_thread = self.is_recording.clone();
 
-        let stream = device
-            .build_input_stream(
+        // Spawn thread to keep stream alive
+        thread::spawn(move || {
+            let stream = match device.build_input_stream(
                 &config,
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
                     if *is_recording.lock().unwrap() {
@@ -65,14 +71,22 @@ impl AudioRecorder {
                 },
                 |err| eprintln!("Audio stream error: {}", err),
                 None,
-            )
-            .map_err(|e| e.to_string())?;
+            ) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Failed to build stream: {}", e);
+                    return;
+                }
+            };
 
-        stream.play().map_err(|e| e.to_string())?;
+            if let Err(e) = stream.play() {
+                eprintln!("Failed to play stream: {}", e);
+                return;
+            }
 
-        thread::spawn(move || {
-            loop {
-                thread::sleep(std::time::Duration::from_millis(100));
+            // Keep thread alive while recording
+            while *is_recording_thread.lock().unwrap() {
+                thread::sleep(std::time::Duration::from_millis(50));
             }
         });
 
@@ -81,6 +95,8 @@ impl AudioRecorder {
 
     pub fn stop_recording(&self) -> Vec<f32> {
         *self.is_recording.lock().unwrap() = false;
+        // Give thread time to stop
+        thread::sleep(std::time::Duration::from_millis(100));
         let samples = self.audio_buffer.lock().unwrap().clone();
         self.audio_buffer.lock().unwrap().clear();
         samples

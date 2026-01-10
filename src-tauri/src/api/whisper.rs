@@ -2,7 +2,8 @@ use reqwest::multipart;
 use serde::Deserialize;
 use super::errors::ApiError;
 
-const WHISPER_API_URL: &str = "https://api.openai.com/v1/audio/transcriptions";
+// Use Groq API (free tier) instead of OpenAI
+const WHISPER_API_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
 const MAX_AUDIO_SIZE: usize = 25 * 1024 * 1024;
 
 #[derive(Deserialize)]
@@ -25,8 +26,15 @@ pub async fn transcribe_audio(
     api_key: &str,
     language: &str,
 ) -> Result<String, ApiError> {
+    println!("[Whisper] Audio data size: {} bytes", audio_data.len());
+    
     if api_key.is_empty() {
         return Err(ApiError::NoApiKey);
+    }
+
+    if audio_data.len() < 1000 {
+        println!("[Whisper] Audio too short!");
+        return Err(ApiError::TranscriptionFailed("Audio too short - please speak longer".to_string()));
     }
 
     if audio_data.len() > MAX_AUDIO_SIZE {
@@ -40,7 +48,7 @@ pub async fn transcribe_audio(
 
     let form = multipart::Form::new()
         .part("file", part)
-        .text("model", "whisper-1")
+        .text("model", "whisper-large-v3")  // Groq's Whisper model
         .text("language", language.to_string())
         .text("response_format", "json");
 
@@ -54,20 +62,27 @@ pub async fn transcribe_audio(
         .await?;
 
     let status = response.status();
+    println!("[Whisper] Response status: {}", status);
 
     if status.is_success() {
         let result: WhisperResponse = response.json().await?;
+        println!("[Whisper] Transcription success: {} chars", result.text.len());
         Ok(result.text)
     } else if status == reqwest::StatusCode::UNAUTHORIZED {
+        println!("[Whisper] Error: Invalid API key");
         Err(ApiError::InvalidApiKey)
     } else if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        println!("[Whisper] Error: Rate limit exceeded");
         Err(ApiError::RateLimitExceeded)
     } else {
-        let error: WhisperError = response.json().await.unwrap_or(WhisperError {
-            error: WhisperErrorDetail {
-                message: "Unknown error".to_string(),
-            },
-        });
-        Err(ApiError::TranscriptionFailed(error.error.message))
+        let body = response.text().await.unwrap_or_default();
+        println!("[Whisper] Error response: {}", body);
+        
+        let error_msg = if let Ok(err) = serde_json::from_str::<WhisperError>(&body) {
+            err.error.message
+        } else {
+            format!("HTTP {}: {}", status, body)
+        };
+        Err(ApiError::TranscriptionFailed(error_msg))
     }
 }
