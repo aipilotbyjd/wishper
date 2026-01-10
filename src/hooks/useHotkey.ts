@@ -13,7 +13,7 @@ import { perfMonitor } from '../lib/performance';
 
 export function useHotkey() {
   const { state, setState, setTranscript, setError, reset } = useRecordingStore();
-  const { apiKey, language, shouldPolish, hotkey, autoPaste } = useSettingsStore();
+  const { apiKey, language, shouldPolish, hotkey, autoPaste, apiProvider } = useSettingsStore();
   const { addError } = useErrorStore();
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function useHotkey() {
     if (state === 'idle') {
       if (!apiKey) {
         addError({ 
-          message: 'Please configure your OpenAI API key', 
+          message: `Please configure your ${apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API key`, 
           type: 'warning',
           action: { label: 'Open Settings', onClick: () => {} }
         });
@@ -79,7 +79,8 @@ export function useHotkey() {
           audioData,
           apiKey,
           language,
-          shouldPolish
+          shouldPolish,
+          apiProvider
         );
 
         // Process snippets (replace trigger phrases with content)

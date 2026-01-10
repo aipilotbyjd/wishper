@@ -2,9 +2,15 @@ use reqwest::multipart;
 use serde::Deserialize;
 use super::errors::ApiError;
 
-// Use Groq API (free tier) instead of OpenAI
-const WHISPER_API_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
+const OPENAI_WHISPER_URL: &str = "https://api.openai.com/v1/audio/transcriptions";
+const GROQ_WHISPER_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
 const MAX_AUDIO_SIZE: usize = 25 * 1024 * 1024;
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum ApiProvider {
+    OpenAI,
+    Groq,
+}
 
 #[derive(Deserialize)]
 struct WhisperResponse {
@@ -25,8 +31,10 @@ pub async fn transcribe_audio(
     audio_data: Vec<u8>,
     api_key: &str,
     language: &str,
+    provider: ApiProvider,
 ) -> Result<String, ApiError> {
-    println!("[Whisper] Audio data size: {} bytes", audio_data.len());
+    println!("[Whisper] Audio data size: {} bytes, provider: {:?}", audio_data.len(), 
+        if provider == ApiProvider::Groq { "Groq" } else { "OpenAI" });
     
     if api_key.is_empty() {
         return Err(ApiError::NoApiKey);
@@ -46,15 +54,20 @@ pub async fn transcribe_audio(
         .mime_str("audio/wav")
         .map_err(|e| ApiError::TranscriptionFailed(e.to_string()))?;
 
+    let (api_url, model) = match provider {
+        ApiProvider::OpenAI => (OPENAI_WHISPER_URL, "whisper-1"),
+        ApiProvider::Groq => (GROQ_WHISPER_URL, "whisper-large-v3"),
+    };
+
     let form = multipart::Form::new()
         .part("file", part)
-        .text("model", "whisper-large-v3")  // Groq's Whisper model
+        .text("model", model)
         .text("language", language.to_string())
         .text("response_format", "json");
 
     let client = reqwest::Client::new();
     let response = client
-        .post(WHISPER_API_URL)
+        .post(api_url)
         .header("Authorization", format!("Bearer {}", api_key))
         .multipart(form)
         .timeout(std::time::Duration::from_secs(60))

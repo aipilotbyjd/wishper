@@ -1,5 +1,11 @@
 import { useState } from 'react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import type { ApiProvider } from '../../lib/tauri';
+
+const PROVIDERS: { value: ApiProvider; name: string; description: string }[] = [
+  { value: 'groq', name: 'Groq (Free)', description: 'Fast & free tier available' },
+  { value: 'openai', name: 'OpenAI', description: 'GPT-4o + Whisper' },
+];
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -20,6 +26,7 @@ export const GeneralSettings = () => {
     shouldPolish, setShouldPolish,
     autoPaste, setAutoPaste,
     hotkey, setHotkey,
+    apiProvider, setApiProvider,
   } = useSettingsStore();
 
   const [showKey, setShowKey] = useState(false);
@@ -32,14 +39,36 @@ export const GeneralSettings = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">OpenAI API Key</label>
+        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">API Provider</label>
+        <div className="grid grid-cols-2 gap-2">
+          {PROVIDERS.map((provider) => (
+            <button
+              key={provider.value}
+              onClick={() => setApiProvider(provider.value)}
+              className={`px-4 py-3 rounded-xl border text-left transition-all ${
+                apiProvider === provider.value
+                  ? 'bg-purple-500/20 border-purple-500 text-white'
+                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <div className="text-sm font-medium">{provider.name}</div>
+              <div className="text-xs text-white/50">{provider.description}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
+          {apiProvider === 'groq' ? 'Groq' : 'OpenAI'} API Key
+        </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <input
               type={showKey ? 'text' : 'password'}
               value={tempKey}
               onChange={(e) => setTempKey(e.target.value)}
-              placeholder="sk-..."
+              placeholder={apiProvider === 'groq' ? 'gsk_...' : 'sk-...'}
               className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
             />
             <button

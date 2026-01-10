@@ -1,9 +1,10 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use super::errors::ApiError;
+use super::whisper::ApiProvider;
 
-// Use Groq API (free tier) instead of OpenAI
-const GPT_API_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
+const OPENAI_CHAT_URL: &str = "https://api.openai.com/v1/chat/completions";
+const GROQ_CHAT_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
 
 #[derive(Serialize)]
 struct ChatMessage {
@@ -57,7 +58,7 @@ Rules:
 8. Format lists if the speaker clearly intends a list
 9. Return ONLY the polished text, no explanations or quotes around it"#;
 
-pub async fn polish_text(raw_text: &str, api_key: &str) -> Result<String, ApiError> {
+pub async fn polish_text(raw_text: &str, api_key: &str, provider: ApiProvider) -> Result<String, ApiError> {
     if api_key.is_empty() {
         return Err(ApiError::NoApiKey);
     }
@@ -66,8 +67,13 @@ pub async fn polish_text(raw_text: &str, api_key: &str) -> Result<String, ApiErr
         return Ok(String::new());
     }
 
+    let (api_url, model) = match provider {
+        ApiProvider::OpenAI => (OPENAI_CHAT_URL, "gpt-4o-mini"),
+        ApiProvider::Groq => (GROQ_CHAT_URL, "llama-3.1-8b-instant"),
+    };
+
     let request = ChatRequest {
-        model: "gpt-4o-mini".to_string(),
+        model: model.to_string(),
         messages: vec![
             ChatMessage {
                 role: "system".to_string(),
@@ -84,7 +90,7 @@ pub async fn polish_text(raw_text: &str, api_key: &str) -> Result<String, ApiErr
 
     let client = Client::new();
     let response = client
-        .post(GPT_API_URL)
+        .post(api_url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
         .json(&request)
